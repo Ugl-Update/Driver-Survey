@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Driver Satisfaction Survey</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #1a56db;
+      --blue-light:  #ebf3ff;
+      --blue-dark:   #1035a0;
+      --text:        #1a1a2e;
+      --text-muted:  #5a6072;
+      --text-hint:   #8e95a9;
+      --border:      #d8dce8;
+      --border-hover:#9aabd4;
+      --bg:          #f0f2f8;
+      --white:       #ffffff;
+      --error:       #dc2626;
+      --error-light: #fef2f2;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --touch:       44px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .page-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 1000;
+    }
+    .loading-overlay.hidden { display: none; }
+
+    .spinner-lg {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(26,86,219,0.15);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loading-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ── Header ── */
+    .survey-header {
+      background: linear-gradient(135deg, #1a56db 0%, #1035a0 100%);
+      padding: 2rem 1.5rem 1.75rem;
+      color: white;
+    }
+    .survey-header .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,0.18);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .survey-header h1 {
+      font-size: clamp(20px, 5vw, 26px);
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
+    }
+    .survey-header p { font-size: 14px; opacity: 0.82; line-height: 1.5; }
+
+    .company-tag {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 14px;
+      width: fit-content;
+    }
+
+    /* ── Sticky progress ── */
+    .progress-strip {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--white);
+      padding: 10px 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), #4f83f0);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+    .progress-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 58px;
+      text-align: right;
+    }
+
+    /* ── Body ── */
+    .survey-body {
+      background: var(--white);
+      padding: 1.5rem;
+    }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: var(--error-light);
+      border: 1px solid #fca5a5;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 1.5rem;
+      font-size: 14px;
+      color: var(--error);
+      display: none;
+    }
+    .error-banner.show { display: block; }
+
+    /* ── Name blocks ── */
+    .name-block {
+      background: var(--blue-light);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      border: 1px solid #c7d9f8;
+    }
+    .name-block label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue-dark);
+      margin-bottom: 8px;
+    }
+    .name-block label .req { color: var(--error); margin-left: 2px; }
+
+    .name-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #a8c4f0;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .name-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.12);
+    }
+
+    /* ── Question blocks ── */
+    .q-block {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #eef0f5;
+    }
+    .q-block:last-of-type { border-bottom: none; }
+
+    .q-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.5;
+    }
+    .q-num { color: var(--blue); font-weight: 700; flex-shrink: 0; }
+    .q-req { color: var(--error); font-size: 13px; margin-left: 2px; flex-shrink: 0; }
+    .q-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-style: italic; }
+
+    .error-msg { font-size: 12px; color: var(--error); margin-top: 8px; display: none; }
+    .error-msg.show { display: block; }
+
+    /* ── Options ── */
+    .opts-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      min-height: var(--touch);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--white);
+      font-size: 14px;
+      color: var(--text);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .opt:active { transform: scale(0.98); }
+    .opt:hover  { border-color: var(--border-hover); background: #f8f9fd; }
+    .opt.selected {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      font-weight: 500;
+    }
+    .opt-marker {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .opt-marker.checkbox { border-radius: 5px; }
+    .opt.selected .opt-marker { border-color: var(--blue); background: var(--blue); }
+    .opt.selected .opt-marker::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+    .opt.selected .opt-marker.checkbox::after {
+      width: 9px;
+      height: 5px;
+      background: none;
+      border-left: 2px solid white;
+      border-bottom: 2px solid white;
+      border-radius: 0;
+      transform: rotate(-45deg) translate(1px, 0);
+    }
+
+    /* ── Department rating cards ── */
+    .dept-cards { display: flex; flex-direction: column; gap: 10px; }
+
+    .dept-card {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+      background: var(--white);
+    }
+    .dept-card.rated { border-color: #a8c4f0; background: #f8fbff; }
+
+    .dept-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .dept-name { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    .dept-rating-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+      white-space: nowrap;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .dept-rating-badge.active {
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      border-color: #a8c4f0;
+    }
+
+    .dept-btns { display: flex; gap: 6px; margin-bottom: 10px; }
+
+    .r-btn {
+      flex: 1;
+      height: var(--touch);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: white;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .r-btn:active { transform: scale(0.95); }
+    .r-btn:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .r-btn.sel    { background: var(--blue); border-color: var(--blue); color: white; box-shadow: 0 2px 6px rgba(26,86,219,0.3); }
+
+    .note-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .note-input:focus { border-color: var(--blue); }
+
+    /* ── Scale legend ── */
+    .scale-legend {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .scale-legend span {
+      background: #f8f9fd;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+
+    /* ── Textarea ── */
+    .free-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+      resize: vertical;
+      min-height: 90px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .free-textarea:focus { border-color: var(--blue); }
+
+    /* ── Submit ── */
+    .submit-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eef0f5;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+    .submit-btn:hover:not(:disabled)  { box-shadow: 0 6px 18px rgba(26,86,219,0.35); transform: translateY(-1px); }
+    .submit-btn:disabled { background: #a0aec0; cursor: not-allowed; transform: none; box-shadow: none; }
+    .submit-note { text-align: center; font-size: 12px; color: var(--text-hint); margin-top: 10px; }
+
+    /* ── End screens (success / blocked / invalid) ── */
+    .end-screen {
+      display: none;
+      text-align: center;
+      padding: 4rem 1.5rem;
+    }
+    .end-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 36px;
+    }
+    .end-screen h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .end-screen p  { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 24px; }
+
+    .icon-success { background: #f0fdf4; }
+    .icon-blocked { background: var(--error-light); }
+    .icon-invalid { background: #fef3c7; }
+
+    .h2-blocked { color: #991b1b; }
+    .h2-invalid { color: #92400e; }
+
+    .new-btn {
+      padding: 12px 28px;
+      background: transparent;
+      border: 1.5px solid var(--blue);
+      color: var(--blue);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      min-height: var(--touch);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .new-btn:hover { background: var(--blue-light); }
+
+    /* ── Spinner (inline) ── */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Mobile ── */
+    @media (max-width: 540px) {
+      .survey-header  { padding: 1.5rem 1rem 1.25rem; }
+      .survey-body    { padding: 1.25rem 1rem; }
+      .progress-strip { padding: 10px 1rem; }
+      .opts-grid      { grid-template-columns: 1fr; }
+      .dept-btns      { gap: 5px; }
+      .r-btn          { font-size: 12px; }
+      .name-block     { padding: 1rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Full-page loading spinner -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner-lg"></div>
+    <div class="loading-text">Loading survey...</div>
+  </div>
+
+  <div class="page-wrap">
+
+    <!-- Header -->
+    <div class="survey-header" id="survey-header" style="display:none">
+      <div class="badge">🔒 Confidential</div>
+      <h1>Driver Satisfaction Survey</h1>
+      <p>All questions are required. Your answers help us make things better for every driver.</p>
+      <div class="company-tag" id="company-tag">🏢 <span id="company-display"></span></div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-strip" id="progress-strip" style="display:none">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-label" id="prog-label">0 of 17</div>
+    </div>
+
+    <!-- Body -->
+    <div class="survey-body" id="survey-body" style="display:none">
+
+      <div class="error-banner" id="err-banner">
+        ⚠️ Please answer all required questions before submitting.
+      </div>
+
+      <!-- ── Form view ── -->
+      <div id="form-view" style="display:none">
+
+        <div class="name-block">
+          <label for="driver-name">Driver name <span class="req">*</span></label>
+          <input class="name-input" type="text" id="driver-name"
+                 placeholder="Enter your full name" autocomplete="name">
+          <div class="error-msg" id="name-err">⚠ Please enter your name.</div>
+        </div>
+
+        <div class="name-block" style="margin-top:-0.75rem">
+          <label for="truck-number">Truck number <span class="req">*</span></label>
+          <input class="name-input" type="text" id="truck-number"
+                 placeholder="Numbers only, up to 8 digits"
+                 inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <div class="error-msg" id="truck-err">⚠ Please enter a valid truck number.</div>
+        </div>
+
+        <!-- Q1 -->
+        <div class="q-block" id="block-q1">
+          <div class="q-label"><span class="q-num">Q1.</span> How long have you been driving with us? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q1" data-type="single">
+            <div class="opt" data-v="Less than 6 months"><span class="opt-marker"></span>Less than 6 months</div>
+            <div class="opt" data-v="6 months to 1 year"><span class="opt-marker"></span>6 months to 1 year</div>
+            <div class="opt" data-v="1 to 3 years"><span class="opt-marker"></span>1 to 3 years</div>
+            <div class="opt" data-v="More than 3 years"><span class="opt-marker"></span>More than 3 years</div>
+          </div>
+          <div class="error-msg" id="err-q1">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="q-block" id="block-q2">
+          <div class="q-label"><span class="q-num">Q2.</span> What type of routes do you mainly run? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q2" data-type="single">
+            <div class="opt" data-v="Local / Regional"><span class="opt-marker"></span>Local / Regional</div>
+            <div class="opt" data-v="Long-Haul / OTR"><span class="opt-marker"></span>Long-Haul / OTR</div>
+            <div class="opt" data-v="Dedicated Lane"><span class="opt-marker"></span>Dedicated Lane</div>
+            <div class="opt" data-v="Mixed"><span class="opt-marker"></span>Mixed</div>
+          </div>
+          <div class="error-msg" id="err-q2">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="q-block" id="block-q3">
+          <div class="q-label"><span class="q-num">Q3.</span> Department ratings <span class="q-req">*</span></div>
+          <div class="q-sub">Rate each department — all rows required.</div>
+          <div class="scale-legend">
+            <span>1 = Very Dissatisfied</span><span>2 = Dissatisfied</span>
+            <span>3 = Neutral</span><span>4 = Satisfied</span><span>5 = Very Satisfied</span>
+          </div>
+          <div class="dept-cards" id="dept-cards"></div>
+          <div class="error-msg" id="err-q3">⚠ Please rate all departments.</div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="q-block" id="block-q4">
+          <div class="q-label"><span class="q-num">Q4.</span> Which department has helped you the most? <span class="q-req">*</span></div>
+          <div class="opts-grid" data-q="q4" data-type="single">
+            <div class="opt" data-v="Manager Communication"><span class="opt-marker"></span>Manager Communication</div>
+            <div class="opt" data-v="Dispatcher Communication"><span class="opt-marker"></span>Dispatcher Communication</div>
+            <div class="opt" data-v="Accounting Team"><span class="opt-marker"></span>Accounting Team</div>
+            <div class="opt" data-v="Fuel Team"><span class="opt-marker"></span>Fuel Team</div>
+            <div class="opt" data-v="PTI Team"><span class="opt-marker"></span>PTI Team</div>
+            <div class="opt" data-v="Maintenance Team"><span class="opt-marker"></span>Maintenance Team</div>
+            <div class="opt" data-v="Shop / Service Support"><span class="opt-marker"></span>Shop / Service Support</div>
+            <div class="opt" data-v="None / Not sure"><span class="opt-marker"></span>None / Not sure</div>
+          </div>
+          <div class="error-msg" id="err-q4">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="q-block" id="block-q5">
+          <div class="q-label"><span class="q-num">Q5.</span> Which department needs the most improvement? <span class="q-req">*</span></div>
+          <div class="opts-grid" data-q="q5" data-type="single">
+            <div class="opt" data-v="Manager Communication"><span class="opt-marker"></span>Manager Communication</div>
+            <div class="opt" data-v="Dispatcher Communication"><span class="opt-marker"></span>Dispatcher Communication</div>
+            <div class="opt" data-v="Accounting Team"><span class="opt-marker"></span>Accounting Team</div>
+            <div class="opt" data-v="Fuel Team"><span class="opt-marker"></span>Fuel Team</div>
+            <div class="opt" data-v="PTI Team"><span class="opt-marker"></span>PTI Team</div>
+            <div class="opt" data-v="Maintenance Team"><span class="opt-marker"></span>Maintenance Team</div>
+            <div class="opt" data-v="Shop / Service Support"><span class="opt-marker"></span>Shop / Service Support</div>
+            <div class="opt" data-v="No issues"><span class="opt-marker"></span>No issues</div>
+          </div>
+          <div class="error-msg" id="err-q5">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q6 -->
+        <div class="q-block" id="block-q6">
+          <div class="q-label"><span class="q-num">Q6.</span> When you have a problem on the road, do you know who to call? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q6" data-type="single">
+            <div class="opt" data-v="Yes, always"><span class="opt-marker"></span>Yes, always</div>
+            <div class="opt" data-v="Sometimes"><span class="opt-marker"></span>Sometimes</div>
+            <div class="opt" data-v="No, it is not clear"><span class="opt-marker"></span>No, it is not clear</div>
+          </div>
+          <div class="error-msg" id="err-q6">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q7 -->
+        <div class="q-block" id="block-q7">
+          <div class="q-label"><span class="q-num">Q7.</span> How fast do departments usually get back to you? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q7" data-type="single">
+            <div class="opt" data-v="Same day"><span class="opt-marker"></span>Same day</div>
+            <div class="opt" data-v="Next day"><span class="opt-marker"></span>Next day</div>
+            <div class="opt" data-v="2 to 3 days"><span class="opt-marker"></span>2 to 3 days</div>
+            <div class="opt" data-v="Takes too long"><span class="opt-marker"></span>Takes too long</div>
+          </div>
+          <div class="error-msg" id="err-q7">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q8 -->
+        <div class="q-block" id="block-q8">
+          <div class="q-label"><span class="q-num">Q8.</span> Have you raised a complaint that felt ignored? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q8" data-type="single">
+            <div class="opt" data-v="Yes, more than once"><span class="opt-marker"></span>Yes, more than once</div>
+            <div class="opt" data-v="Yes, once or twice"><span class="opt-marker"></span>Yes, once or twice</div>
+            <div class="opt" data-v="No, never"><span class="opt-marker"></span>No, never</div>
+          </div>
+          <div class="error-msg" id="err-q8">⚠ Please select an option.</div>
+          <div style="margin-top:12px">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-style:italic">If yes — what happened?</div>
+            <textarea class="free-textarea" id="q8-detail" placeholder="Describe what happened..."></textarea>
+          </div>
+        </div>
+
+        <!-- Q9 -->
+        <div class="q-block" id="block-q9">
+          <div class="q-label"><span class="q-num">Q9.</span> What should the company improve most? <span class="q-req">*</span></div>
+          <div class="opts-grid" data-q="q9" data-type="single">
+            <div class="opt" data-v="Better pay or bonuses"><span class="opt-marker"></span>Better pay or bonuses</div>
+            <div class="opt" data-v="Faster response from dispatchers"><span class="opt-marker"></span>Faster dispatcher response</div>
+            <div class="opt" data-v="More home time / better schedule"><span class="opt-marker"></span>More home time / schedule</div>
+            <div class="opt" data-v="Quicker maintenance and repairs"><span class="opt-marker"></span>Quicker maintenance</div>
+            <div class="opt" data-v="Clearer communication from management"><span class="opt-marker"></span>Clearer management comms</div>
+            <div class="opt" data-v="Faster accounting / payment resolution"><span class="opt-marker"></span>Faster payment resolution</div>
+            <div class="opt" data-v="Better fuel card support"><span class="opt-marker"></span>Better fuel card support</div>
+            <div class="opt" data-v="More respect and recognition"><span class="opt-marker"></span>More respect / recognition</div>
+            <div class="opt" data-v="Equipment upgrades"><span class="opt-marker"></span>Equipment upgrades</div>
+            <div class="opt" data-v="Other"><span class="opt-marker"></span>Other</div>
+          </div>
+          <div class="error-msg" id="err-q9">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q10 -->
+        <div class="q-block" id="block-q10">
+          <div class="q-label"><span class="q-num">Q10.</span> Issues in the past 3 months? <span class="q-req">*</span></div>
+          <div class="q-sub">Select all that apply.</div>
+          <div class="opts-grid" data-q="q10" data-type="multi">
+            <div class="opt" data-v="Late or incorrect paycheck"><span class="opt-marker checkbox"></span>Late or incorrect paycheck</div>
+            <div class="opt" data-v="Dispatcher did not respond in time"><span class="opt-marker checkbox"></span>Dispatcher no response</div>
+            <div class="opt" data-v="Maintenance issue not fixed quickly"><span class="opt-marker checkbox"></span>Slow maintenance fix</div>
+            <div class="opt" data-v="Fuel card not working"><span class="opt-marker checkbox"></span>Fuel card not working</div>
+            <div class="opt" data-v="PTI delay held up my route"><span class="opt-marker checkbox"></span>PTI delay on my route</div>
+            <div class="opt" data-v="Could not reach my manager"><span class="opt-marker checkbox"></span>Could not reach manager</div>
+            <div class="opt" data-v="Felt disrespected by someone at the company"><span class="opt-marker checkbox"></span>Felt disrespected</div>
+            <div class="opt" data-v="No issues to report"><span class="opt-marker checkbox"></span>No issues to report</div>
+          </div>
+          <div class="error-msg" id="err-q10">⚠ Please select at least one option.</div>
+        </div>
+
+        <!-- Q11 -->
+        <div class="q-block" id="block-q11">
+          <div class="q-label"><span class="q-num">Q11.</span> How did you first hear about us? <span class="q-req">*</span></div>
+          <div class="opts-grid" data-q="q11" data-type="single">
+            <div class="opt" data-v="A friend or fellow driver told me"><span class="opt-marker"></span>A friend or driver told me</div>
+            <div class="opt" data-v="I saw a job posting online"><span class="opt-marker"></span>Job posting online</div>
+            <div class="opt" data-v="Found you on social media"><span class="opt-marker"></span>Social media</div>
+            <div class="opt" data-v="I saw a truck or sign on the road"><span class="opt-marker"></span>Saw a truck / sign</div>
+            <div class="opt" data-v="A recruiter contacted me"><span class="opt-marker"></span>Recruiter contacted me</div>
+            <div class="opt" data-v="I searched Google / the internet"><span class="opt-marker"></span>Searched Google</div>
+            <div class="opt" data-v="I drove past the terminal or office"><span class="opt-marker"></span>Drove past the terminal</div>
+            <div class="opt" data-v="Other"><span class="opt-marker"></span>Other</div>
+          </div>
+          <div class="error-msg" id="err-q11">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q12 -->
+        <div class="q-block" id="block-q12">
+          <div class="q-label"><span class="q-num">Q12.</span> Which social media do you use most? <span class="q-req">*</span></div>
+          <div class="q-sub">Select all that apply.</div>
+          <div class="opts-grid" data-q="q12" data-type="multi">
+            <div class="opt" data-v="Facebook"><span class="opt-marker checkbox"></span>Facebook</div>
+            <div class="opt" data-v="Instagram"><span class="opt-marker checkbox"></span>Instagram</div>
+            <div class="opt" data-v="YouTube"><span class="opt-marker checkbox"></span>YouTube</div>
+            <div class="opt" data-v="TikTok"><span class="opt-marker checkbox"></span>TikTok</div>
+            <div class="opt" data-v="Twitter / X"><span class="opt-marker checkbox"></span>Twitter / X</div>
+            <div class="opt" data-v="LinkedIn"><span class="opt-marker checkbox"></span>LinkedIn</div>
+            <div class="opt" data-v="Snapchat"><span class="opt-marker checkbox"></span>Snapchat</div>
+            <div class="opt" data-v="I do not use social media"><span class="opt-marker checkbox"></span>I don't use social media</div>
+          </div>
+          <div class="error-msg" id="err-q12">⚠ Please select at least one option.</div>
+        </div>
+
+        <!-- Q13 -->
+        <div class="q-block" id="block-q13">
+          <div class="q-label"><span class="q-num">Q13.</span> Overall, how satisfied are you working here? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q13" data-type="single">
+            <div class="opt" data-v="Very Satisfied"><span class="opt-marker"></span>Very Satisfied</div>
+            <div class="opt" data-v="Satisfied"><span class="opt-marker"></span>Satisfied</div>
+            <div class="opt" data-v="Neutral"><span class="opt-marker"></span>Neutral</div>
+            <div class="opt" data-v="Dissatisfied"><span class="opt-marker"></span>Dissatisfied</div>
+            <div class="opt" data-v="Very Dissatisfied"><span class="opt-marker"></span>Very Dissatisfied</div>
+          </div>
+          <div class="error-msg" id="err-q13">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q14 -->
+        <div class="q-block" id="block-q14">
+          <div class="q-label"><span class="q-num">Q14.</span> Would you recommend us to another driver? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q14" data-type="single">
+            <div class="opt" data-v="Yes, definitely"><span class="opt-marker"></span>Yes, definitely</div>
+            <div class="opt" data-v="Maybe"><span class="opt-marker"></span>Maybe</div>
+            <div class="opt" data-v="No"><span class="opt-marker"></span>No</div>
+          </div>
+          <div class="error-msg" id="err-q14">⚠ Please select an option.</div>
+        </div>
+
+        <!-- Q15 -->
+        <div class="q-block" id="block-q15">
+          <div class="q-label"><span class="q-num">Q15.</span> Do you feel valued and respected as a driver? <span class="q-req">*</span></div>
+          <div class="opts-row" data-q="q15" data-type="single">
+            <div class="opt" data-v="Yes, always"><span class="opt-marker"></span>Yes, always</div>
+            <div class="opt" data-v="Most of the time"><span class="opt-marker"></span>Most of the time</div>
+            <div class="opt" data-v="Sometimes"><span class="opt-marker"></span>Sometimes</div>
+            <div class="opt" data-v="Rarely"><span class="opt-marker"></span>Rarely</div>
+          </div>
+          <div class="error-msg" id="err-q15">⚠ Please select an option.</div>
+        </div>
+
+        <div class="submit-section">
+          <button class="submit-btn" id="submit-btn" onclick="handleSubmit()">Submit Survey</button>
+          <p class="submit-note">All answers are confidential · Required fields marked *</p>
+        </div>
+      </div>
+      <!-- /form-view -->
+
+      <!-- Success -->
+      <div class="end-screen" id="success-view">
+        <div class="end-icon icon-success">✓</div>
+        <h2>Thank you, <span id="thank-name"></span>!</h2>
+        <p>Your survey has been submitted and saved.<br>We truly appreciate your honest feedback.</p>
+        <button class="new-btn" onclick="location.reload()">Submit another response</button>
+      </div>
+
+      <!-- Blocked -->
+      <div class="end-screen" id="blocked-view">
+        <div class="end-icon icon-blocked">🚫</div>
+        <h2 class="h2-blocked">Already Submitted</h2>
+        <p>You have already submitted a response from this device.<br>
+           If you think this is a mistake, please contact your manager.</p>
+      </div>
+
+      <!-- Invalid link -->
+      <div class="end-screen" id="invalid-view">
+        <div class="end-icon icon-invalid">🔒</div>
+        <h2 class="h2-invalid">Invalid Survey Link</h2>
+        <p>This link is invalid or has expired.<br>
+           Please ask your manager for the correct survey link.</p>
+      </div>
+
+    </div>
+    <!-- /survey-body -->
+  </div>
+  <!-- /page-wrap -->
+
+  <script>
+    // ─── Config ────────────────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://bhtvsckyjcnejbxcvruw.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJodHZzY2t5amNuZWpieGN2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyODk5NjIsImV4cCI6MjA5NDg2NTk2Mn0.6nIweDKz4ry5wkuOumKhws68WehTCicoN72ucB_yM10';
+
+    const { createClient } = window.supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ─── URL params ────────────────────────────────────────────────────────────
+    const params  = new URLSearchParams(window.location.search);
+    const COMPANY = (params.get('company') || '').trim() || 'Unknown';
+    const TOKEN   = (params.get('token')   || '').trim();
+
+    // ─── Fingerprint ───────────────────────────────────────────────────────────
+    function computeFingerprint() {
+      var parts = [
+        navigator.userAgent || '', navigator.language || '',
+        navigator.platform  || '', String(navigator.hardwareConcurrency || ''),
+        String(screen.colorDepth || ''), screen.width + 'x' + screen.height,
+        String(new Date().getTimezoneOffset())
+      ];
+      try {
+        var c = document.createElement('canvas'), ctx = c.getContext('2d');
+        ctx.textBaseline = 'top'; ctx.font = '13px Arial';
+        ctx.fillStyle = '#1e3a8a'; ctx.fillText('fp\u{1F69A}', 2, 2);
+        parts.push(c.toDataURL().slice(-60));
+      } catch(e) {}
+      var str = parts.join('||'), h = 0;
+      for (var i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+      return Math.abs(h).toString(36);
+    }
+    const FINGERPRINT = computeFingerprint();
+
+    // ─── Screen management ─────────────────────────────────────────────────────
+    function showScreen(name) {
+      var isForm = name === 'form';
+      document.getElementById('survey-header').style.display  = 'block';
+      document.getElementById('survey-body').style.display    = 'block';
+      document.getElementById('progress-strip').style.display = isForm ? 'flex' : 'none';
+
+      ['form', 'success', 'blocked', 'invalid'].forEach(function(s) {
+        var el = document.getElementById(s + '-view');
+        if (el) el.style.display = (s === name) ? (s === 'form' ? 'block' : 'block') : 'none';
+      });
+
+      // Show company tag when form is visible and company is known
+      if (isForm && COMPANY !== 'Unknown') {
+        var tag = document.getElementById('company-tag');
+        tag.style.display = 'inline-flex';
+        document.getElementById('company-display').textContent = COMPANY;
+      }
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    // ─── Survey initialisation ─────────────────────────────────────────────────
+    async function initSurvey() {
+      try {
+        // 1. Basic param check
+        if (!TOKEN || COMPANY === 'Unknown') {
+          hideLoading();
+          showScreen('invalid');
+          return;
+        }
+
+        // 2. Validate token against Supabase
+        var tokenRes = await sb
+          .from('company_tokens')
+          .select('token')
+          .eq('company', COMPANY)
+          .maybeSingle();
+
+        if (!tokenRes.data || tokenRes.data.token !== TOKEN) {
+          hideLoading();
+          showScreen('invalid');
+          return;
+        }
+
+        // 3. Check if this device already submitted
+        var deviceRes = await sb
+          .from('device_submissions')
+          .select('id')
+          .eq('company', COMPANY)
+          .eq('fingerprint', FINGERPRINT)
+          .maybeSingle();
+
+        if (deviceRes.data) {
+          hideLoading();
+          showScreen('blocked');
+          return;
+        }
+
+        // 4. All clear — show form
+        hideLoading();
+        showScreen('form');
+        updateProgress();
+
+      } catch (err) {
+        console.error('Init error:', err);
+        // Fail open — show the form anyway
+        hideLoading();
+        showScreen('form');
+        updateProgress();
+      }
+    }
+
+    // ─── Rating cards ──────────────────────────────────────────────────────────
+    var DEPTS = [
+      'Manager Communication', 'Dispatcher Communication', 'Accounting Team',
+      'Fuel Team', 'Pre-Trip Inspection (PTI) Team', 'Maintenance Team',
+      'Shop / Service Support', 'HR'
+    ];
+
+    var RATING_LABELS = {
+      1: 'Very Dissatisfied', 2: 'Dissatisfied', 3: 'Neutral',
+      4: 'Satisfied', 5: 'Very Satisfied'
+    };
+
+    var ratings = {}, notes = {};
+
+    DEPTS.forEach(function(dept) {
+      ratings[dept] = null;
+      notes[dept]   = '';
+
+      var card     = document.createElement('div');
+      var cardId   = 'card_' + dept.replace(/[^a-zA-Z0-9]/g, '_');
+      var safeDept = dept.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      card.className = 'dept-card';
+      card.id        = cardId;
+
+      var html = '<div class="dept-card-top">'
+        + '<div class="dept-name">' + dept + '</div>'
+        + '<div class="dept-rating-badge" id="badge_' + cardId + '">Not rated</div>'
+        + '</div><div class="dept-btns">';
+
+      for (var i = 1; i <= 5; i++) {
+        html += '<button type="button" class="r-btn" id="rbtn_' + cardId + '_' + i + '" '
+              + 'onclick="setRating(\'' + safeDept + '\',' + i + ',\'' + cardId + '\')">'
+              + i + '</button>';
+      }
+
+      html += '</div><input class="note-input" type="text" placeholder="Notes (optional)..." '
+            + 'oninput="notes[\'' + safeDept + '\']=this.value">';
+
+      card.innerHTML = html;
+      document.getElementById('dept-cards').appendChild(card);
+    });
+
+    function setRating(dept, val, cardId) {
+      ratings[dept] = val;
+      for (var i = 1; i <= 5; i++) {
+        var b = document.getElementById('rbtn_' + cardId + '_' + i);
+        if (b) b.classList.toggle('sel', i === val);
+      }
+      var badge = document.getElementById('badge_' + cardId);
+      if (badge) { badge.textContent = val + ' – ' + RATING_LABELS[val]; badge.classList.add('active'); }
+      var card = document.getElementById(cardId);
+      if (card) card.classList.add('rated');
+      document.getElementById('err-q3').classList.remove('show');
+      updateProgress();
+    }
+
+    // ─── Answers state ─────────────────────────────────────────────────────────
+    var answers = {};
+    for (var i = 1; i <= 15; i++) answers['q' + i] = null;
+    answers.q10 = []; answers.q12 = [];
+
+    // ─── Option handlers ───────────────────────────────────────────────────────
+    document.querySelectorAll('[data-q]').forEach(function(group) {
+      var q = group.dataset.q, type = group.dataset.type;
+      group.querySelectorAll('.opt').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+          if (type === 'single') {
+            group.querySelectorAll('.opt').forEach(function(o) { o.classList.remove('selected'); });
+            opt.classList.add('selected');
+            answers[q] = opt.dataset.v;
+          } else {
+            opt.classList.toggle('selected');
+            var v = opt.dataset.v;
+            if (!Array.isArray(answers[q])) answers[q] = [];
+
+            if (opt.classList.contains('selected')) {
+              var exclusiveVal = q === 'q10' ? 'No issues to report' : 'I do not use social media';
+              if (q === 'q10' || q === 'q12') {
+                if (v === exclusiveVal) {
+                  group.querySelectorAll('.opt').forEach(function(o) {
+                    if (o !== opt) o.classList.remove('selected');
+                  });
+                  answers[q] = [exclusiveVal];
+                } else {
+                  group.querySelectorAll('.opt').forEach(function(o) {
+                    if (o.dataset.v === exclusiveVal) o.classList.remove('selected');
+                  });
+                  answers[q] = answers[q].filter(function(x) { return x !== exclusiveVal; });
+                  if (!answers[q].includes(v)) answers[q].push(v);
+                }
+              } else {
+                if (!answers[q].includes(v)) answers[q].push(v);
+              }
+            } else {
+              answers[q] = answers[q].filter(function(x) { return x !== v; });
+            }
+          }
+          document.getElementById('err-' + q).classList.remove('show');
+          updateProgress();
+        });
+      });
+    });
+
+    // ─── Progress ──────────────────────────────────────────────────────────────
+    function updateProgress() {
+      var done = 0;
+      if (document.getElementById('driver-name').value.trim()) done++;
+      if (/^[0-9]{1,8}$/.test(document.getElementById('truck-number').value.trim())) done++;
+      for (var i = 1; i <= 15; i++) {
+        var k = 'q' + i;
+        if (i === 3)                      { if (DEPTS.every(function(d) { return ratings[d] !== null; })) done++; }
+        else if (Array.isArray(answers[k])) { if (answers[k].length > 0) done++; }
+        else                              { if (answers[k]) done++; }
+      }
+      document.getElementById('prog-fill').style.width  = Math.round((done / 17) * 100) + '%';
+      document.getElementById('prog-label').textContent = done + ' of 17';
+    }
+
+    document.getElementById('driver-name').addEventListener('input', function() {
+      document.getElementById('name-err').classList.remove('show'); updateProgress();
+    });
+    document.getElementById('truck-number').addEventListener('input', function() {
+      document.getElementById('truck-err').classList.remove('show'); updateProgress();
+    });
+
+    // ─── Validation ────────────────────────────────────────────────────────────
+    function validate() {
+      var valid = true;
+      if (!document.getElementById('driver-name').value.trim()) {
+        document.getElementById('name-err').classList.add('show'); valid = false;
+      }
+      var tv = document.getElementById('truck-number').value.trim();
+      if (!tv || !/^[0-9]{1,8}$/.test(tv)) {
+        document.getElementById('truck-err').classList.add('show'); valid = false;
+      }
+      for (var i = 1; i <= 15; i++) {
+        var k = 'q' + i, ok = false;
+        if (i === 3)                      ok = DEPTS.every(function(d) { return ratings[d] !== null; });
+        else if (Array.isArray(answers[k])) ok = answers[k].length > 0;
+        else                              ok = !!answers[k];
+        if (!ok) {
+          document.getElementById('err-' + k).classList.add('show');
+          if (valid) document.getElementById('block-' + k).scrollIntoView({ behavior:'smooth', block:'center' });
+          valid = false;
+        }
+      }
+      return valid;
+    }
+
+    // ─── Submit ────────────────────────────────────────────────────────────────
+    async function handleSubmit() {
+      document.getElementById('err-banner').classList.remove('show');
+      if (!validate()) {
+        document.getElementById('err-banner').classList.add('show');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      var btn = document.getElementById('submit-btn');
+      btn.disabled  = true;
+      btn.innerHTML = '<span class="spinner"></span>Submitting...';
+
+      var name        = document.getElementById('driver-name').value.trim();
+      var truckNumber = document.getElementById('truck-number').value.trim();
+
+      var ratingLabels = {
+        1: 'Very Dissatisfied', 2: 'Dissatisfied', 3: 'Neutral',
+        4: 'Satisfied', 5: 'Very Satisfied'
+      };
+
+      function fmtMulti(arr) {
+        return arr.length ? arr.map(function(v, i) { return (i+1) + '. ' + v; }).join('\n') : '';
+      }
+
+      try {
+        // Gate A: lock device fingerprint (unique constraint rejects duplicates)
+        var fpRes = await sb.from('device_submissions').insert({
+          company: COMPANY, fingerprint: FINGERPRINT
+        });
+        if (fpRes.error) {
+          if (fpRes.error.code === '23505') { showScreen('blocked'); return; }
+          throw fpRes.error;
+        }
+
+        // Gate B: lock driver name + truck (unique constraint rejects duplicates)
+        var driverRes = await sb.from('driver_submissions').insert({
+          company: COMPANY,
+          driver_name:  name.toLowerCase(),
+          truck_number: truckNumber
+        });
+        if (driverRes.error) {
+          if (driverRes.error.code === '23505') { showScreen('blocked'); return; }
+          throw driverRes.error;
+        }
+
+        // Insert the actual response
+        var row = {
+          company:      COMPANY,
+          driver_name:  name,
+          truck_number: truckNumber,
+          time_with_company: answers.q1,
+          route_type:        answers.q2,
+          manager_rating:    ratingLabels[ratings['Manager Communication']],
+          manager_notes:     notes['Manager Communication'] || 'None',
+          dispatcher_rating: ratingLabels[ratings['Dispatcher Communication']],
+          dispatcher_notes:  notes['Dispatcher Communication'] || 'None',
+          accounting_rating: ratingLabels[ratings['Accounting Team']],
+          accounting_notes:  notes['Accounting Team'] || 'None',
+          fuel_rating:       ratingLabels[ratings['Fuel Team']],
+          fuel_notes:        notes['Fuel Team'] || 'None',
+          pti_rating:        ratingLabels[ratings['Pre-Trip Inspection (PTI) Team']],
+          pti_notes:         notes['Pre-Trip Inspection (PTI) Team'] || 'None',
+          maintenance_rating: ratingLabels[ratings['Maintenance Team']],
+          maintenance_notes:  notes['Maintenance Team'] || 'None',
+          shop_rating:       ratingLabels[ratings['Shop / Service Support']],
+          shop_notes:        notes['Shop / Service Support'] || 'None',
+          hr_rating:         ratingLabels[ratings['HR']],
+          hr_notes:          notes['HR'] || 'None',
+          most_helpful_dept:      answers.q4,
+          needs_most_improvement: answers.q5,
+          knows_who_to_call:      answers.q6,
+          response_speed:         answers.q7,
+          complaint_ignored:      answers.q8,
+          complaint_detail:       document.getElementById('q8-detail').value.trim() || 'None',
+          area_to_improve:        answers.q9,
+          issues_past_3_months:   fmtMulti(answers.q10),
+          how_they_heard:         answers.q11,
+          social_media:           fmtMulti(answers.q12),
+          overall_satisfaction:   answers.q13,
+          would_recommend:        answers.q14,
+          feels_valued:           answers.q15
+        };
+
+        var respRes = await sb.from('survey_responses').insert(row);
+        if (respRes.error) throw respRes.error;
+
+        document.getElementById('thank-name').textContent = name;
+        showScreen('success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('Submit error:', err);
+        btn.disabled  = false;
+        btn.innerHTML = 'Submit Survey';
+        alert('Submission failed. Please check your connection and try again.');
+      }
+    }
+
+    // ─── Start ────────────────────────────────────────────────────────────────
+    initSurvey();
+  </script>
+</body>
+</html>
