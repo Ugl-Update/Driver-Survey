@@ -817,6 +817,7 @@
       return Math.abs(h).toString(36);
     }
     const FINGERPRINT = computeFingerprint();
+    const lsKey = 'submitted_' + COMPANY + '_' + TOKEN;
 
     // ─── Screen management ─────────────────────────────────────────────────────
     function showScreen(name) {
