@@ -865,15 +865,25 @@
           return;
         }
 
-        // 3. Check if this device already submitted
+
+        // 3. Check localStorage first (catches Safari)
+        var lsKey = 'submitted_' + COMPANY + '_' + TOKEN;
+        if (localStorage.getItem(lsKey)) {
+          hideLoading();
+          showScreen('blocked');
+          return;
+        }
+        
+        // 4. Check device fingerprint in Supabase
         var deviceRes = await sb
           .from('device_submissions')
           .select('id')
           .eq('company', COMPANY)
           .eq('fingerprint', FINGERPRINT)
           .maybeSingle();
-
+        
         if (deviceRes.data) {
+          localStorage.setItem(lsKey, '1'); // sync to localStorage too
           hideLoading();
           showScreen('blocked');
           return;
@@ -1074,9 +1084,15 @@
           company: COMPANY, fingerprint: FINGERPRINT
         });
         if (fpRes.error) {
-          if (fpRes.error.code === '23505') { showScreen('blocked'); return; }
+          if (fpRes.error.code === '23505') {
+            localStorage.setItem(lsKey, '1');
+            showScreen('blocked');
+            return;
+          }
           throw fpRes.error;
         }
+        // Lock this device in localStorage immediately after successful insert
+        localStorage.setItem(lsKey, '1');
 
         // Gate B: lock driver name + truck (unique constraint rejects duplicates)
         var driverRes = await sb.from('driver_submissions').insert({
