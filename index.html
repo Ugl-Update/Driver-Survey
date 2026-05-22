@@ -395,6 +395,13 @@
     }
     .free-textarea:focus { border-color: var(--blue); }
 
+    /* ── Other comment box ── */
+    .other-box {
+      display: none;
+      margin-top: 12px;
+    }
+    .other-box.show { display: block; }
+
     /* ── Submit ── */
     .submit-section {
       margin-top: 2rem;
@@ -575,20 +582,22 @@
           <div class="error-msg" id="err-q3">⚠ Please rate all departments.</div>
         </div>
 
-        <!-- Q4 -->
+        <!-- Q4 — multi-select, HR added -->
         <div class="q-block" id="block-q4">
           <div class="q-label"><span class="q-num">Q4.</span> Which department has helped you the most? <span class="q-req">*</span></div>
-          <div class="opts-grid" data-q="q4" data-type="single">
-            <div class="opt" data-v="Manager Communication"><span class="opt-marker"></span>Manager Communication</div>
-            <div class="opt" data-v="Dispatcher Communication"><span class="opt-marker"></span>Dispatcher Communication</div>
-            <div class="opt" data-v="Accounting Team"><span class="opt-marker"></span>Accounting Team</div>
-            <div class="opt" data-v="Fuel Team"><span class="opt-marker"></span>Fuel Team</div>
-            <div class="opt" data-v="PTI Team"><span class="opt-marker"></span>PTI Team</div>
-            <div class="opt" data-v="Maintenance Team"><span class="opt-marker"></span>Maintenance Team</div>
-            <div class="opt" data-v="Shop / Service Support"><span class="opt-marker"></span>Shop / Service Support</div>
-            <div class="opt" data-v="None / Not sure"><span class="opt-marker"></span>None / Not sure</div>
+          <div class="q-sub">Select all that apply.</div>
+          <div class="opts-grid" data-q="q4" data-type="multi">
+            <div class="opt" data-v="Manager Communication"><span class="opt-marker checkbox"></span>Manager Communication</div>
+            <div class="opt" data-v="Dispatcher Communication"><span class="opt-marker checkbox"></span>Dispatcher Communication</div>
+            <div class="opt" data-v="Accounting Team"><span class="opt-marker checkbox"></span>Accounting Team</div>
+            <div class="opt" data-v="Fuel Team"><span class="opt-marker checkbox"></span>Fuel Team</div>
+            <div class="opt" data-v="PTI Team"><span class="opt-marker checkbox"></span>PTI Team</div>
+            <div class="opt" data-v="Maintenance Team"><span class="opt-marker checkbox"></span>Maintenance Team</div>
+            <div class="opt" data-v="Shop / Service Support"><span class="opt-marker checkbox"></span>Shop / Service Support</div>
+            <div class="opt" data-v="HR"><span class="opt-marker checkbox"></span>HR</div>
+            <div class="opt" data-v="None / Not sure"><span class="opt-marker checkbox"></span>None / Not sure</div>
           </div>
-          <div class="error-msg" id="err-q4">⚠ Please select an option.</div>
+          <div class="error-msg" id="err-q4">⚠ Please select at least one option.</div>
         </div>
 
         <!-- Q5 -->
@@ -645,7 +654,7 @@
           </div>
         </div>
 
-        <!-- Q9 -->
+        <!-- Q9 — Other with required comment box -->
         <div class="q-block" id="block-q9">
           <div class="q-label"><span class="q-num">Q9.</span> What should the company improve most? <span class="q-req">*</span></div>
           <div class="opts-grid" data-q="q9" data-type="single">
@@ -661,9 +670,14 @@
             <div class="opt" data-v="Other"><span class="opt-marker"></span>Other</div>
           </div>
           <div class="error-msg" id="err-q9">⚠ Please select an option.</div>
+          <div class="other-box" id="q9-other-box">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-style:italic">Please describe: <span style="color:var(--error)">*</span></div>
+            <textarea class="free-textarea" id="q9-other-detail" placeholder="Tell us more..."></textarea>
+            <div class="error-msg" id="err-q9-other">⚠ Please describe your answer.</div>
+          </div>
         </div>
 
-        <!-- Q10 -->
+        <!-- Q10 — Other option with required comment box -->
         <div class="q-block" id="block-q10">
           <div class="q-label"><span class="q-num">Q10.</span> Issues in the past 3 months? <span class="q-req">*</span></div>
           <div class="q-sub">Select all that apply.</div>
@@ -675,12 +689,18 @@
             <div class="opt" data-v="PTI delay held up my route"><span class="opt-marker checkbox"></span>PTI delay on my route</div>
             <div class="opt" data-v="Could not reach my manager"><span class="opt-marker checkbox"></span>Could not reach manager</div>
             <div class="opt" data-v="Felt disrespected by someone at the company"><span class="opt-marker checkbox"></span>Felt disrespected</div>
+            <div class="opt" data-v="Other"><span class="opt-marker checkbox"></span>Other</div>
             <div class="opt" data-v="No issues to report"><span class="opt-marker checkbox"></span>No issues to report</div>
           </div>
           <div class="error-msg" id="err-q10">⚠ Please select at least one option.</div>
+          <div class="other-box" id="q10-other-box">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-style:italic">Please describe the other issue: <span style="color:var(--error)">*</span></div>
+            <textarea class="free-textarea" id="q10-other-detail" placeholder="Tell us more..."></textarea>
+            <div class="error-msg" id="err-q10-other">⚠ Please describe the other issue.</div>
+          </div>
         </div>
 
-        <!-- Q11 -->
+        <!-- Q11 — Other with required comment box -->
         <div class="q-block" id="block-q11">
           <div class="q-label"><span class="q-num">Q11.</span> How did you first hear about us? <span class="q-req">*</span></div>
           <div class="opts-grid" data-q="q11" data-type="single">
@@ -694,9 +714,14 @@
             <div class="opt" data-v="Other"><span class="opt-marker"></span>Other</div>
           </div>
           <div class="error-msg" id="err-q11">⚠ Please select an option.</div>
+          <div class="other-box" id="q11-other-box">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-style:italic">Please describe: <span style="color:var(--error)">*</span></div>
+            <textarea class="free-textarea" id="q11-other-detail" placeholder="Tell us more..."></textarea>
+            <div class="error-msg" id="err-q11-other">⚠ Please describe your answer.</div>
+          </div>
         </div>
 
-        <!-- Q12 -->
+        <!-- Q12 — Reddit added, Twitter/X removed, Snapchat kept -->
         <div class="q-block" id="block-q12">
           <div class="q-label"><span class="q-num">Q12.</span> Which social media do you use most? <span class="q-req">*</span></div>
           <div class="q-sub">Select all that apply.</div>
@@ -705,7 +730,7 @@
             <div class="opt" data-v="Instagram"><span class="opt-marker checkbox"></span>Instagram</div>
             <div class="opt" data-v="YouTube"><span class="opt-marker checkbox"></span>YouTube</div>
             <div class="opt" data-v="TikTok"><span class="opt-marker checkbox"></span>TikTok</div>
-            <div class="opt" data-v="Twitter / X"><span class="opt-marker checkbox"></span>Twitter / X</div>
+            <div class="opt" data-v="Reddit"><span class="opt-marker checkbox"></span>Reddit</div>
             <div class="opt" data-v="LinkedIn"><span class="opt-marker checkbox"></span>LinkedIn</div>
             <div class="opt" data-v="Snapchat"><span class="opt-marker checkbox"></span>Snapchat</div>
             <div class="opt" data-v="I do not use social media"><span class="opt-marker checkbox"></span>I don't use social media</div>
@@ -828,10 +853,9 @@
 
       ['form', 'success', 'blocked', 'invalid'].forEach(function(s) {
         var el = document.getElementById(s + '-view');
-        if (el) el.style.display = (s === name) ? (s === 'form' ? 'block' : 'block') : 'none';
+        if (el) el.style.display = (s === name) ? 'block' : 'none';
       });
 
-      // Show company tag when form is visible and company is known
       if (isForm && COMPANY !== 'Unknown') {
         var tag = document.getElementById('company-tag');
         tag.style.display = 'inline-flex';
@@ -846,14 +870,10 @@
     // ─── Survey initialisation ─────────────────────────────────────────────────
     async function initSurvey() {
       try {
-        // 1. Basic param check
         if (!TOKEN || COMPANY === 'Unknown') {
-          hideLoading();
-          showScreen('invalid');
-          return;
+          hideLoading(); showScreen('invalid'); return;
         }
 
-        // 2. Validate token against Supabase
         var tokenRes = await sb
           .from('company_tokens')
           .select('token')
@@ -861,46 +881,30 @@
           .maybeSingle();
 
         if (!tokenRes.data || tokenRes.data.token !== TOKEN) {
-          hideLoading();
-          showScreen('invalid');
-          return;
+          hideLoading(); showScreen('invalid'); return;
         }
 
-
-        // 3. Check localStorage first (catches Safari)
-        var lsKey = 'submitted_' + COMPANY + '_' + TOKEN;
         if (localStorage.getItem(lsKey)) {
-          hideLoading();
-          showScreen('blocked');
-          return;
+          hideLoading(); showScreen('blocked'); return;
         }
-        
-        // 4. Check device fingerprint in Supabase
+
         var deviceRes = await sb
           .from('device_submissions')
           .select('id')
           .eq('company', COMPANY)
           .eq('fingerprint', FINGERPRINT)
           .maybeSingle();
-        
+
         if (deviceRes.data) {
-          localStorage.setItem(lsKey, '1'); // sync to localStorage too
-          hideLoading();
-          showScreen('blocked');
-          return;
+          localStorage.setItem(lsKey, '1');
+          hideLoading(); showScreen('blocked'); return;
         }
 
-        // 4. All clear — show form
-        hideLoading();
-        showScreen('form');
-        updateProgress();
+        hideLoading(); showScreen('form'); updateProgress();
 
       } catch (err) {
         console.error('Init error:', err);
-        // Fail open — show the form anyway
-        hideLoading();
-        showScreen('form');
-        updateProgress();
+        hideLoading(); showScreen('form'); updateProgress();
       }
     }
 
@@ -964,7 +968,8 @@
     // ─── Answers state ─────────────────────────────────────────────────────────
     var answers = {};
     for (var i = 1; i <= 15; i++) answers['q' + i] = null;
-    answers.q10 = []; answers.q12 = [];
+    // multi-select questions
+    answers.q4 = []; answers.q10 = []; answers.q12 = [];
 
     // ─── Option handlers ───────────────────────────────────────────────────────
     document.querySelectorAll('[data-q]').forEach(function(group) {
@@ -1002,6 +1007,17 @@
               answers[q] = answers[q].filter(function(x) { return x !== v; });
             }
           }
+
+          // ── Show / hide "Other" comment boxes ──
+          if (q === 'q9' || q === 'q11') {
+            var box = document.getElementById(q + '-other-box');
+            if (box) box.classList.toggle('show', answers[q] === 'Other');
+          }
+          if (q === 'q10') {
+            var box10 = document.getElementById('q10-other-box');
+            if (box10) box10.classList.toggle('show', answers.q10.includes('Other'));
+          }
+
           document.getElementById('err-' + q).classList.remove('show');
           updateProgress();
         });
@@ -1015,9 +1031,9 @@
       if (/^[0-9]{1,8}$/.test(document.getElementById('truck-number').value.trim())) done++;
       for (var i = 1; i <= 15; i++) {
         var k = 'q' + i;
-        if (i === 3)                      { if (DEPTS.every(function(d) { return ratings[d] !== null; })) done++; }
+        if (i === 3)                        { if (DEPTS.every(function(d) { return ratings[d] !== null; })) done++; }
         else if (Array.isArray(answers[k])) { if (answers[k].length > 0) done++; }
-        else                              { if (answers[k]) done++; }
+        else                                { if (answers[k]) done++; }
       }
       document.getElementById('prog-fill').style.width  = Math.round((done / 17) * 100) + '%';
       document.getElementById('prog-label').textContent = done + ' of 17';
@@ -1033,24 +1049,67 @@
     // ─── Validation ────────────────────────────────────────────────────────────
     function validate() {
       var valid = true;
+      var firstError = null;
+
       if (!document.getElementById('driver-name').value.trim()) {
-        document.getElementById('name-err').classList.add('show'); valid = false;
+        document.getElementById('name-err').classList.add('show');
+        if (!firstError) firstError = document.getElementById('driver-name');
+        valid = false;
       }
       var tv = document.getElementById('truck-number').value.trim();
       if (!tv || !/^[0-9]{1,8}$/.test(tv)) {
-        document.getElementById('truck-err').classList.add('show'); valid = false;
+        document.getElementById('truck-err').classList.add('show');
+        if (!firstError) firstError = document.getElementById('truck-number');
+        valid = false;
       }
+
       for (var i = 1; i <= 15; i++) {
         var k = 'q' + i, ok = false;
-        if (i === 3)                      ok = DEPTS.every(function(d) { return ratings[d] !== null; });
+        if (i === 3)                        ok = DEPTS.every(function(d) { return ratings[d] !== null; });
         else if (Array.isArray(answers[k])) ok = answers[k].length > 0;
-        else                              ok = !!answers[k];
+        else                                ok = !!answers[k];
         if (!ok) {
           document.getElementById('err-' + k).classList.add('show');
-          if (valid) document.getElementById('block-' + k).scrollIntoView({ behavior:'smooth', block:'center' });
+          if (!firstError) firstError = document.getElementById('block-' + k);
           valid = false;
         }
       }
+
+      // ── Validate "Other" comment boxes ──
+      if (answers.q9 === 'Other' && !document.getElementById('q9-other-detail').value.trim()) {
+        document.getElementById('q9-other-box').classList.add('show');
+        document.getElementById('q9-other-detail').style.borderColor = 'var(--error)';
+        document.getElementById('err-q9-other').classList.add('show');
+        if (!firstError) firstError = document.getElementById('q9-other-detail');
+        valid = false;
+      } else {
+        document.getElementById('q9-other-detail').style.borderColor = '';
+        document.getElementById('err-q9-other').classList.remove('show');
+      }
+
+      if (answers.q10.includes('Other') && !document.getElementById('q10-other-detail').value.trim()) {
+        document.getElementById('q10-other-box').classList.add('show');
+        document.getElementById('q10-other-detail').style.borderColor = 'var(--error)';
+        document.getElementById('err-q10-other').classList.add('show');
+        if (!firstError) firstError = document.getElementById('q10-other-detail');
+        valid = false;
+      } else {
+        document.getElementById('q10-other-detail').style.borderColor = '';
+        document.getElementById('err-q10-other').classList.remove('show');
+      }
+
+      if (answers.q11 === 'Other' && !document.getElementById('q11-other-detail').value.trim()) {
+        document.getElementById('q11-other-box').classList.add('show');
+        document.getElementById('q11-other-detail').style.borderColor = 'var(--error)';
+        document.getElementById('err-q11-other').classList.add('show');
+        if (!firstError) firstError = document.getElementById('q11-other-detail');
+        valid = false;
+      } else {
+        document.getElementById('q11-other-detail').style.borderColor = '';
+        document.getElementById('err-q11-other').classList.remove('show');
+      }
+
+      if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return valid;
     }
 
@@ -1079,23 +1138,44 @@
         return arr.length ? arr.map(function(v, i) { return (i+1) + '. ' + v; }).join('\n') : '';
       }
 
+      // Build Q9 — append Other comment if selected
+      var q9Val = answers.q9;
+      if (q9Val === 'Other') {
+        var q9c = document.getElementById('q9-other-detail').value.trim();
+        if (q9c) q9Val = 'Other: ' + q9c;
+      }
+
+      // Build Q10 — replace "Other" entry with "Other: comment"
+      var q10List = answers.q10.map(function(v) {
+        if (v === 'Other') {
+          var c = document.getElementById('q10-other-detail').value.trim();
+          return c ? 'Other: ' + c : 'Other';
+        }
+        return v;
+      });
+
+      // Build Q11 — append Other comment if selected
+      var q11Val = answers.q11;
+      if (q11Val === 'Other') {
+        var q11c = document.getElementById('q11-other-detail').value.trim();
+        if (q11c) q11Val = 'Other: ' + q11c;
+      }
+
       try {
-        // Gate A: lock device fingerprint (unique constraint rejects duplicates)
+        // Gate A: lock device fingerprint
         var fpRes = await sb.from('device_submissions').insert({
           company: COMPANY, fingerprint: FINGERPRINT
         });
         if (fpRes.error) {
           if (fpRes.error.code === '23505') {
             localStorage.setItem(lsKey, '1');
-            showScreen('blocked');
-            return;
+            showScreen('blocked'); return;
           }
           throw fpRes.error;
         }
-        // Lock this device in localStorage immediately after successful insert
         localStorage.setItem(lsKey, '1');
 
-        // Gate B: lock driver name + truck (unique constraint rejects duplicates)
+        // Gate B: lock driver name + truck
         var driverRes = await sb.from('driver_submissions').insert({
           company: COMPANY,
           driver_name:  name.toLowerCase(),
@@ -1106,7 +1186,7 @@
           throw driverRes.error;
         }
 
-        // Insert the actual response
+        // Insert survey response
         var row = {
           company:      COMPANY,
           driver_name:  name,
@@ -1129,15 +1209,15 @@
           shop_notes:        notes['Shop / Service Support'] || 'None',
           hr_rating:         ratingLabels[ratings['HR']],
           hr_notes:          notes['HR'] || 'None',
-          most_helpful_dept:      answers.q4,
+          most_helpful_dept:      fmtMulti(answers.q4),
           needs_most_improvement: answers.q5,
           knows_who_to_call:      answers.q6,
           response_speed:         answers.q7,
           complaint_ignored:      answers.q8,
           complaint_detail:       document.getElementById('q8-detail').value.trim() || 'None',
-          area_to_improve:        answers.q9,
-          issues_past_3_months:   fmtMulti(answers.q10),
-          how_they_heard:         answers.q11,
+          area_to_improve:        q9Val,
+          issues_past_3_months:   fmtMulti(q10List),
+          how_they_heard:         q11Val,
           social_media:           fmtMulti(answers.q12),
           overall_satisfaction:   answers.q13,
           would_recommend:        answers.q14,
