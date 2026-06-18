@@ -890,13 +890,11 @@
 
         var deviceRes = await sb
           .from('device_submissions')
-          .select('id')
+          .select('id', { count: 'exact', head: true })
           .eq('company', COMPANY)
-          .eq('fingerprint', FINGERPRINT)
-          .maybeSingle();
+          .eq('fingerprint', FINGERPRINT);
 
-        if (deviceRes.data) {
-          localStorage.setItem(lsKey, '1');
+        if ((deviceRes.count || 0) >= 300) {
           hideLoading(); showScreen('blocked'); return;
         }
 
@@ -1163,17 +1161,13 @@
 
       try {
         // Gate A: lock device fingerprint
+        // Gate A: track device submissions (limit 300)
         var fpRes = await sb.from('device_submissions').insert({
           company: COMPANY, fingerprint: FINGERPRINT
         });
-        if (fpRes.error) {
-          if (fpRes.error.code === '23505') {
-            localStorage.setItem(lsKey, '1');
-            showScreen('blocked'); return;
-          }
+        if (fpRes.error && fpRes.error.code !== '23505') {
           throw fpRes.error;
         }
-        localStorage.setItem(lsKey, '1');
 
         // Gate B: lock driver name + truck
         var driverRes = await sb.from('driver_submissions').insert({
